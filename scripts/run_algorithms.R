@@ -16,7 +16,7 @@ source("scripts/MAZDA.R")
 
 source_python('Python/reproblem.py')
 
-maxeval <- 30000
+maxeval <- 300
 popSize <- 100
 dimensions <- 10
 n.obj <- 3
@@ -25,7 +25,7 @@ repetition <- 3
 
 
 
-fun_benchmarks <- paste0("UF", 1:10)
+# fun_benchmarks <- paste0("UF", 1:10)
 fun_rw <- c('moon', 'mazda', 'CRE32', 'CRE31', 'CRE23', 'CRE22', 'CRE21')
 
 
