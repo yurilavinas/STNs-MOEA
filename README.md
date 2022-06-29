@@ -14,6 +14,10 @@ Lavinas, Y., Aranha, C., Ochoa, G. (2022). Search Trajectories Networks of Multi
 
 ------
 
+It came to the authors’ attention that there was an error in the scripts for creating the STNs when finding the representative solutions for the weight vector. The error was in a matrix multiplication between the values of the weight vectors applied to the objective values of the solutions. That led to wrong measurements in the number of nodes and edges. We have made changes in the text, images and tables of section 6 to reflect the correct calculations. The authors apologize for these errors and states that they do not change the scientific conclusions of the article in any way.
+
+------
+
 ## Software Dependencies
 
 - **R** libraries: `igraph, dplyr, tidyr`

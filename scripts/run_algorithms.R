@@ -7,12 +7,16 @@ library(eaf)
 library(feather)
 
 
-source('nsga2.R')
-source('Utils_stn.R')
+source('algorithms/nsga2.R')
+source('algorithms/moead.R')
+source('scripts/functions.R')
 
-source('moead.R')
+source("scripts/MOON.R")
+source("scripts/MAZDA.R")
 
-maxeval <- 300
+source_python('Python/reproblem.py')
+
+maxeval <- 30000
 popSize <- 100
 dimensions <- 10
 n.obj <- 3
@@ -21,7 +25,8 @@ repetition <- 3
 
 
 
-fun <- paste0("UF", 1:10)
+fun_benchmarks <- paste0("UF", 1:10)
+fun_rw <- c('moon', 'mazda', 'CRE32', 'CRE31', 'CRE23', 'CRE22', 'CRE21')
 
 
 for (f in fun) {
