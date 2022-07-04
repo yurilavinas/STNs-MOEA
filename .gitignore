@@ -3,10 +3,6 @@
 .RData
 .Ruserdata
 
-algorithm_data/*
-algorithm_data/
-algorithm_data
-
 DB/*
 DB/
 DB
