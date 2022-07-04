@@ -1,50 +1,5 @@
 library(assertthat)
-# load data files of one algorithm
 
-## add filename
-read.data <- function(algorithm, number.repetitions, problem) {
-  assert_that(is.character(algorithm))
-  assert_that(is.numeric(number.repetitions))
-  assert_that(0 < number.repetitions)
-  assert_that(is.character(problem))
-  all.data = data.frame()
-  for (repetition in 1:number.repetitions) {
-    filename = paste0(inpath,
-                      algorithm,
-                      '_',
-                      repetition,
-                      '_',
-                      problem,
-                      '/all_solutions.csv')
-    single.run.solutions = read.table(file = filename,
-                                      header = T,
-                                      sep = ',')
-    single.run.solutions$Run = repetition
-    all.data = rbind(all.data, single.run.solutions)
-  }
-  all.data
-}
-
-read.data.DASCMOP <- function(algorithm, problem) {
-  assert_that(is.character(algorithm))
-  assert_that(is.character(problem))
-  all.data = data.frame()
-  
-  filename = paste0(inpath,
-                    algorithm,
-                    '_fun_',
-                    problem,
-                    '/all_solutions.csv')
-  col.names = c(paste0("X",1:30), paste0("Y.", 1:n.obj), "iter", 'nfe', 'Run')
-  all.data = read.table(
-    file = filename,
-    header = T,
-    sep = ',',
-    col.names = col.names
-  )
-  
-  all.data
-}
 
 # concatenate the decision space values of each solutions
 concat.solutions <- function(all.data) {
@@ -69,15 +24,6 @@ get.decision.values <- function(all.data) {
   assert_that(is.data.frame(all.data))
   X = select(all.data, starts_with('X'))
   X
-}
-
-## function from MOEADr
-getminP <- function(Y) {
-  assert_that(is.data.frame(Y))
-  apply(Y,
-        MARGIN = 2,
-        FUN = min,
-        na.rm = TRUE)
 }
 
 ## function from MOEADr
@@ -164,13 +110,51 @@ uniform.decomposition <- function (N, n.obj) {
   )))
 }
 
-find.representative <- function(filtered.data, W, minP) {
+# Get estimate of 'ideal' point (minP)
+getminP <- function(X){
+  apply(X, MARGIN = 2, FUN = min, na.rm = TRUE)
+}
+
+
+
+# Get estimate of 'nadir' point (maxP)
+getmaxP <- function(X){
+  apply(X, MARGIN = 2, FUN = max, na.rm = TRUE)
+}
+
+scale_vector <- function(Y, minP=NULL, maxP=NULL) {
+  
+  if(is.null(minP) && is.null(maxP)){
+    minP <- getminP(Y)  
+    maxP <- getmaxP(Y)
+  }
+  
+  
+  
+  MinP <- matrix(rep(minP, times = nrow(Y)),
+                 nrow  = nrow(Y),
+                 byrow = TRUE)
+  MaxP <- matrix(rep(maxP, times = nrow(Y)),
+                 nrow  = nrow(Y),
+                 byrow = TRUE)
+  
+  # Perform linear scaling
+  Y    <- (Y - MinP) / (MaxP - MinP + 1e-16)
+  return (Y)
+  
+  return(Y)
+}
+
+find.representative <- function(filtered.data, W, minP, maxP) {
   assert_that(is.data.frame(filtered.data))
   assert_that(is.matrix(W))
   assert_that(5 == dim(W)[1])
   assert_that(is.vector(minP))
   # getting the objective values from the whole data
   Y = get.objectives.values(filtered.data)
+  
+  #scaling? confirm this
+  Y = scale_vector(as.data.frame(Y), minP, maxP)
   
   selected.Y = data.frame()
   
@@ -188,6 +172,7 @@ find.representative <- function(filtered.data, W, minP) {
     
     # finding the solution that has the minimal scalar value
     idx = which.min(scalar_values)
+    
     idx = idx[sample.int(length(idx))[1]]
     
     # combine into one data frame, with the minimal scalar value solution
@@ -199,14 +184,14 @@ find.representative <- function(filtered.data, W, minP) {
 
 
 # finding the representative solutions for each of the vectors
-generate.vector.data <- function(all.data, minP) {
+generate.vector.data.combinatorial <- function(all.data, minP) {
   assert_that(is.data.frame(all.data))
   assert_that(is.vector(minP))
   max.iter = max(all.data$iter) - 1
   
   final.output = data.frame()
-  for (j in 1:max(all.data$Run)) {
-    algorithm.data  = filter(all.data, Run == j)
+  for (j in 1:max(all.data$run)) {
+    algorithm.data  = filter(all.data, run == j)
     for (i in 0:max.iter) {
       #################################
       #### getting starting points ####
@@ -255,7 +240,7 @@ generate.vector.data <- function(all.data, minP) {
       
       
       # adding information about the run of the algorithm
-      output$Run = representatives1$Run
+      output$run = representatives1$Run
       
       # adding generation (iteration) data
       output$Gen = i
@@ -270,43 +255,38 @@ generate.vector.data <- function(all.data, minP) {
   final.output
 }
 
-# this is because silly me used different names at the different
-# stages I run the algorithms.... mental note: improve this!
-read.data.continuous <-
-  function(algorithm, number.repetitions, problem) {
-    assert_that(is.character(algorithm))
-    assert_that(is.numeric(number.repetitions))
-    assert_that(0 < number.repetitions)
-    assert_that(is.character(problem))
-    all.data = data.frame()
-    for (repetition in 1:number.repetitions) {
-      single.run.solutions <- data.frame()
-      filename = paste0(inpath,
-                        algorithm,
-                        '_',
-                        problem,
-                        '_',
-                        repetition)
-      
-      for (iter in 0:118) {
-        single.run.solutions = rbind(single.run.solutions, read_feather(path = paste0(filename, '/iter_', iter)))
-      }
-      single.run.solutions$Run = repetition
-      all.data = rbind(all.data, single.run.solutions)
-    }
-    all.data
-  }
+# load data files of one algorithm on UF/RE* problems
+## add filename
+read.data.continuous <- function(inpath, algorithm, problem) {
+  assert_that(is.character(algorithm))
+  assert_that(is.character(problem))
+  all.data = data.frame()
+  
+  filename = paste0(inpath,
+                    algorithm,
+                    '_',
+                    problem,
+                    '/all_solutions.csv')
+  
+  all.data = read.table(
+    file = filename,
+    header = T,
+    sep = ','
+  )
+  
+  all.data
+}
 
 # finding the representative solutions for each of the vectors
 ## this is different because we need to partition the continuous search space
-generate.vector.data.continuous <- function(all.data, minP, d = 3, width = 8) {
+generate.vector.data.continuous <- function(all.data, minP, maxP, d = 3, width = 8) {
   assert_that(is.data.frame(all.data))
   assert_that(is.vector(minP))
-  max.iter = max(all.data$iter) - 1
+  max.iter = max(all.data$iter) - 1 
   
   final.output = data.frame()
-  for (j in 1:max(all.data$Run)) {
-    algorithm.data  = filter(all.data, Run == j)
+  for (j in 1:max(all.data$run)) {
+    algorithm.data  = filter(all.data, run == j)
     for (i in 0:max.iter) {
       #################################
       #### getting starting points ####
@@ -317,7 +297,7 @@ generate.vector.data.continuous <- function(all.data, minP, d = 3, width = 8) {
       
       # finding the representatives solutions
       representatives1 <-
-        find.representative(filtered.data1, W, minP)
+        find.representative(filtered.data1, W, minP, maxP)
       
       
       # getting the decision values from the representative solutions
@@ -325,7 +305,7 @@ generate.vector.data.continuous <- function(all.data, minP, d = 3, width = 8) {
       
       # concatenating the dimensions of the solutions from the whole data
       # creating the hyperspace partition
-      solution1 = format(as.hexmode(apply(round(X1, d) * 10^d, 2 ,as.integer)), width=width)
+      solution1 = format(as.hexmode(apply(round(X1, d) * 10^d, 2, as.integer)), width=width)
       solution1 = apply(solution1, 1, paste0, collapse = "")
 
       
@@ -341,7 +321,7 @@ generate.vector.data.continuous <- function(all.data, minP, d = 3, width = 8) {
       
       # finding the representatives solutions
       representatives2 <-
-        find.representative(filtered.data2, W, minP)
+        find.representative(filtered.data2, W, minP, maxP)
       
       
       # getting the decision values from the representative solutions
@@ -358,10 +338,8 @@ generate.vector.data.continuous <- function(all.data, minP, d = 3, width = 8) {
       #################################################
       #### adding iteration and vector information ####
       #################################################
-      
-      
       # adding information about the run of the algorithm
-      output$Run = representatives1$Run
+      output$Run = representatives1$run
       
       # adding generation (iteration) data
       output$Gen = i

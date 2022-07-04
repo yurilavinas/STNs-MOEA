@@ -90,8 +90,8 @@ class RE22():
         f[0] = (29.4 * x1) + (0.6 * x2 * x3)
 
         # Original constraint functions 	
-        g[0] = (x1 * x3) - 7.735 * ((x1 * x1) / x2) - 180.0
-        g[1] = 4.0 - (x3 / x2)
+        g[0] = (x1 * x3) - 7.735 * ((x1 * x1) / (x2 + 1e-16)) - 180.0
+        g[1] = 4.0 - (x3 / (x2 + 1e-16))
         g = np.where(g < 0, -g, 0)          
         f[1] = g[0] + g[1]
         
@@ -1248,8 +1248,33 @@ class CRE51():
 
 
 
-'CRE32', 'CRE51', 'CRE31', 'CRE25', 'CRE24', 'CRE23', 'CRE22', 'CRE21'
 def get_reproblem(name):
+  ###################
+  if name == "RE21":
+    problem = RE21() 
+  if name == "RE22":
+    problem = RE22() 
+  if name == "RE23":
+    problem = RE23() 
+  if name == "RE24":
+    problem = RE24() 
+  if name == "RE25":
+    problem = RE25() 
+  if name == "RE31":
+    problem = RE31() 
+  if name == "RE32":
+    problem = RE32() 
+  if name == "RE33":
+    problem = RE33() 
+  if name == "RE34":
+    problem = RE34() 
+  if name == "RE35":
+    problem = RE35() 
+  if name == "RE36":
+    problem = RE36() 
+  if name == "RE37":
+    problem = RE37() 
+  ###################
   if name == "CRE32":
     problem = CRE32() 
   if name == "CRE51":

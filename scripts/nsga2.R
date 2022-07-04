@@ -1,15 +1,51 @@
-variation_de <- function(X, P, phi = 0.5, ...) {
-  phi <- 0.5
-  new.solution <- X
-  dimX <- dim(X)[1]
-  for (i in 1:dim(X)[1]) {
-    idx <- sample.int(dimX, 3,
-                      replace = TRUE)#,
-    # prob    = P[, i])
-    new.solution[i, ] <-
-      X[idx[1], ] + phi * (X[idx[2], ] - X[idx[3], ])
+fastNonDominatedSorting = function (inputData) 
+{
+  popSize = nrow(inputData)
+  idxDominators = vector("list", popSize)
+  idxDominatees = vector("list", popSize)
+  for (i in 1:(popSize - 1)) {
+    for (j in i:popSize) {
+      if (i != j) {
+        xi = inputData[i, ]
+        xj = inputData[j, ]
+        if (all(xi <= xj) && any(xi < xj)) {
+          idxDominators[[j]] = c(idxDominators[[j]], 
+                                 i)
+          idxDominatees[[i]] = c(idxDominatees[[i]], 
+                                 j)
+        }
+        else if (all(xj <= xi) && any(xj < xi)) {
+          idxDominators[[i]] = c(idxDominators[[i]], 
+                                 j)
+          idxDominatees[[j]] = c(idxDominatees[[j]], 
+                                 i)
+        }
+      }
+    }
   }
-  return (new.solution)
+  noDominators <- lapply(idxDominators, length)
+  rnkList <- list()
+  rnkList <- c(rnkList, list(which(noDominators == 0)))
+  solAssigned <- c()
+  solAssigned <- c(solAssigned, length(which(noDominators == 
+                                               0)))
+  while (sum(solAssigned) < popSize) {
+    Q <- c()
+    noSolInCurrFrnt <- solAssigned[length(solAssigned)]
+    for (i in 1:noSolInCurrFrnt) {
+      solIdx <- rnkList[[length(rnkList)]][i]
+      hisDominatees <- idxDominatees[[solIdx]]
+      for (i in hisDominatees) {
+        noDominators[[i]] <- noDominators[[i]] - 1
+        if (noDominators[[i]] == 0) {
+          Q <- c(Q, i)
+        }
+      }
+    }
+    rnkList <- c(rnkList, list(sort(Q)))
+    solAssigned <- c(solAssigned, length(Q))
+  }
+  return(rnkList)
 }
 
 function (inputData) 
