@@ -21,7 +21,6 @@ source_python(paste0(inpath, 'Python/reproblem.py'))
 
 maxeval <- 30000
 popSize <- 100
-
 repetition <- 10
 
 
@@ -59,67 +58,58 @@ for (f in fun_rw) {
   
   n.obj = benchmark$n.obj
   
-  if (n.obj == 2) {
-    decomp2    <-
-      list(name       = "sld", H = popSize - 1) # <-- H = 99 in the original
-    
-    W2  <- generate_weights(decomp = decomp2,
-                            m      = n.obj)
-    
-    X  <- create_population(N       = nrow(W2),
-                            problem = problem)
-  }
-  else{
-    decomp2    <-
-      list(name       = "sld", H = 21) # <-- H = 99 in the original
-    
-    W2  <- generate_weights(decomp = decomp2,
-                            m      = n.obj)
-    
-    X  <- create_population(N       = nrow(W2),
-                            problem = problem)
-    popSize = nrow(W2)
-  }
-  
   
   scaling <- preset_moead("moead.de")$scaling
   scaling$name <- "simple"
   
+  update <- preset_moead("moead.de")$update
+  update$UseArchive <- TRUE
+  
   for (run in 1:repetition) {
-    # print("MOEA/D")
+      decomp2    <-
+        list(name       = "uniform", N = popSize) 
+      
+      W2  <- generate_weights(decomp = decomp2,
+                              m      = n.obj)
+      
+      X  <- create_population(N       = nrow(W2),
+                              problem = problem)
+    
+    print("MOEA/D")
 
-    # dir.name <- paste0(inpath, "algorithm_data/moead_", f, "/")
-    # if (!dir.exists(dir.name)) {
-    #   dir.create(dir.name)
-    #   if (!file.exists(paste0(dir.name, "/all_solutions.csv"))) {
-    #     colname = c(paste0("X", 1:length(problem$xmin)),
-    #                 paste0('Y', 1:problem$m),
-    #                 'iter',
-    #                 'nfe',
-    #                 'run')
-    #     colname = t(as.data.frame(colname))
-    #     write.table(
-    #       colname,
-    #       paste0(dir.name, "/all_solutions.csv"),
-    #       sep = ',',
-    #       col.names = F,
-    #       row.names = F
-    #     )
-    #   }
-    # }
-    # 
-    # 
-    # out1 <- moead(
-    #   X = X,
-    #   preset   = preset_moead("moead.de"),
-    #   problem  = problem,
-    #   decomp = decomp2,
-    #   scaling = scaling,
-    #   saving.dir = dir.name,
-    #   showpars = list(show.iters = "dots", showevery = 1000),
-    #   stopcrit = list(list(name    = "maxeval",
-    #                        maxeval = maxeval))
-    # )
+    dir.name <- paste0(inpath, "algorithm_data/moead_", f, "/")
+    if (!dir.exists(dir.name)) {
+      dir.create(dir.name)
+      if (!file.exists(paste0(dir.name, "/all_solutions.csv"))) {
+        colname = c(paste0("X", 1:length(problem$xmin)),
+                    paste0('Y', 1:problem$m),
+                    'iter',
+                    'nfe',
+                    'run')
+        colname = t(as.data.frame(colname))
+        write.table(
+          colname,
+          paste0(dir.name, "/all_solutions.csv"),
+          sep = ',',
+          col.names = F,
+          row.names = F
+        )
+      }
+    }
+
+
+    out1 <- moead(
+      X = X,
+      preset   = preset_moead("moead.de"),
+      problem  = problem,
+      decomp = decomp2,
+      scaling = scaling,
+      saving.dir = dir.name,
+      update = update,
+      showpars = list(show.iters = "dots", showevery = 1000),
+      stopcrit = list(list(name    = "maxeval",
+                           maxeval = maxeval))
+    )
 
     dir.name <- paste0(inpath, "algorithm_data/nsga2_", f, "/")
     if (!dir.exists(dir.name)) {
@@ -157,7 +147,6 @@ for (f in fun_rw) {
         XoverDistIdx = 20,
         mprob = 0.1,
         MuDistIdx = 3,
-        scaling = T,
         saving.dir = dir.name
       )
     

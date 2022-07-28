@@ -8,17 +8,17 @@ library(feather)
 source("functions.R")
 
 #parameters
-number.repetitions = 10
 inpath = '../algorithm_data/'
 outpath = '../STN_data/'
 
-precision_factor = 3
+od = 3
+width = 12
 # problem
 fun_UF <-
   paste0("UF", 1:10)
-fun_rw <- c('RE21','RE22','RE23','RE24','RE25','RE31','RE32','RE33','RE34','RE35','RE36','RE38')
+fun_rw <- c('RE21','RE22','RE23','RE24','RE25','RE31','RE32','RE33','RE34','RE35','RE36','RE37')
+
 problems = c(fun_UF, fun_rw)
-problems = c(fun_rw)
 
 for (prob in problems){
   cat(prob, ': ')
@@ -39,13 +39,13 @@ for (prob in problems){
     problem = prob
   )
   
-  ## then for nsga2
+  # then for nsga2
   nsga2.data = read.data.continuous(
     inpath = inpath,
     algorithm = 'nsga2',
     problem = prob
   )
-  
+
   # generating the 5 weight vectors for a 2, 3 or more obj problem
   # might not work for all number of objectives
   W = uniform.decomposition(N = 5, n.obj = n.obj)
@@ -75,9 +75,9 @@ for (prob in problems){
   
   # finding the representative solutions for each of the vectors
   cat("MOEA/D... ")
-  moead.data.vectors = generate.vector.data.continuous(moead.data, minP, maxP, precision_factor)
+  moead.data.vectors = generate.vector.data.continuous(moead.data, minP, maxP, od, width)
   cat("NSGA-II... ")
-  nsga2.data.vectors  = generate.vector.data.continuous(nsga2.data, minP, maxP, precision_factor)
+  nsga2.data.vectors  = generate.vector.data.continuous(nsga2.data, minP, maxP, od, width)
   
   write.table(
     moead.data.vectors,

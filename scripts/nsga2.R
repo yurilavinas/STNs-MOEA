@@ -1,159 +1,22 @@
-fastNonDominatedSorting = function (inputData) 
-{
-  popSize = nrow(inputData)
-  idxDominators = vector("list", popSize)
-  idxDominatees = vector("list", popSize)
-  for (i in 1:(popSize - 1)) {
-    for (j in i:popSize) {
-      if (i != j) {
-        xi = inputData[i, ]
-        xj = inputData[j, ]
-        if (all(xi <= xj) && any(xi < xj)) {
-          idxDominators[[j]] = c(idxDominators[[j]], 
-                                 i)
-          idxDominatees[[i]] = c(idxDominatees[[i]], 
-                                 j)
-        }
-        else if (all(xj <= xi) && any(xj < xi)) {
-          idxDominators[[i]] = c(idxDominators[[i]], 
-                                 j)
-          idxDominatees[[j]] = c(idxDominatees[[j]], 
-                                 i)
-        }
-      }
-    }
+variation_de <- function(X, P, phi = 0.5, ...) {
+  phi <- 0.5
+  new.solution <- X
+  dimX <- dim(X)[1]
+  for (i in 1:dim(X)[1]) {
+    idx <- sample.int(dimX, 3,
+                      replace = TRUE)#,
+    # prob    = P[, i])
+    new.solution[i, ] <-
+      X[idx[1], ] + phi * (X[idx[2], ] - X[idx[3], ])
   }
-  noDominators <- lapply(idxDominators, length)
-  rnkList <- list()
-  rnkList <- c(rnkList, list(which(noDominators == 0)))
-  solAssigned <- c()
-  solAssigned <- c(solAssigned, length(which(noDominators == 
-                                               0)))
-  while (sum(solAssigned) < popSize) {
-    Q <- c()
-    noSolInCurrFrnt <- solAssigned[length(solAssigned)]
-    for (i in 1:noSolInCurrFrnt) {
-      solIdx <- rnkList[[length(rnkList)]][i]
-      hisDominatees <- idxDominatees[[solIdx]]
-      for (i in hisDominatees) {
-        noDominators[[i]] <- noDominators[[i]] - 1
-        if (noDominators[[i]] == 0) {
-          Q <- c(Q, i)
-        }
-      }
-    }
-    rnkList <- c(rnkList, list(sort(Q)))
-    solAssigned <- c(solAssigned, length(Q))
-  }
-  return(rnkList)
+  return (new.solution)
 }
 
-function (inputData) 
-{
-  popSize = nrow(inputData)
-  idxDominators = vector("list", popSize)
-  idxDominatees = vector("list", popSize)
-  for (i in 1:(popSize - 1)) {
-    for (j in i:popSize) {
-      if (i != j) {
-        xi = inputData[i, ]
-        xj = inputData[j, ]
-        if (all(xi <= xj) && any(xi < xj)) {
-          idxDominators[[j]] = c(idxDominators[[j]], 
-                                 i)
-          idxDominatees[[i]] = c(idxDominatees[[i]], 
-                                 j)
-        }
-        else if (all(xj <= xi) && any(xj < xi)) {
-          idxDominators[[i]] = c(idxDominators[[i]], 
-                                 j)
-          idxDominatees[[j]] = c(idxDominatees[[j]], 
-                                 i)
-        }
-      }
-    }
-  }
-  noDominators <- lapply(idxDominators, length)
-  rnkList <- list()
-  rnkList <- c(rnkList, list(which(noDominators == 0)))
-  solAssigned <- c()
-  solAssigned <- c(solAssigned, length(which(noDominators == 
-                                               0)))
-  while (sum(solAssigned) < popSize) {
-    Q <- c()
-    noSolInCurrFrnt <- solAssigned[length(solAssigned)]
-    for (i in 1:noSolInCurrFrnt) {
-      solIdx <- rnkList[[length(rnkList)]][i]
-      hisDominatees <- idxDominatees[[solIdx]]
-      for (i in hisDominatees) {
-        noDominators[[i]] <- noDominators[[i]] - 1
-        if (noDominators[[i]] == 0) {
-          Q <- c(Q, i)
-        }
-      }
-    }
-    rnkList <- c(rnkList, list(sort(Q)))
-    solAssigned <- c(solAssigned, length(Q))
-  }
-  return(rnkList)
-}
-
-
-function (inputData) 
-{
-  popSize = nrow(inputData)
-  idxDominators = vector("list", popSize)
-  idxDominatees = vector("list", popSize)
-  for (i in 1:(popSize - 1)) {
-    for (j in i:popSize) {
-      if (i != j) {
-        xi = inputData[i, ]
-        xj = inputData[j, ]
-        if (all(xi <= xj) && any(xi < xj)) {
-          idxDominators[[j]] = c(idxDominators[[j]], 
-                                 i)
-          idxDominatees[[i]] = c(idxDominatees[[i]], 
-                                 j)
-        }
-        else if (all(xj <= xi) && any(xj < xi)) {
-          idxDominators[[i]] = c(idxDominators[[i]], 
-                                 j)
-          idxDominatees[[j]] = c(idxDominatees[[j]], 
-                                 i)
-        }
-      }
-    }
-  }
-  noDominators <- lapply(idxDominators, length)
-  rnkList <- list()
-  rnkList <- c(rnkList, list(which(noDominators == 0)))
-  solAssigned <- c()
-  solAssigned <- c(solAssigned, length(which(noDominators == 
-                                               0)))
-  while (sum(solAssigned) < popSize) {
-    Q <- c()
-    noSolInCurrFrnt <- solAssigned[length(solAssigned)]
-    for (i in 1:noSolInCurrFrnt) {
-      solIdx <- rnkList[[length(rnkList)]][i]
-      hisDominatees <- idxDominatees[[solIdx]]
-      for (i in hisDominatees) {
-        noDominators[[i]] <- noDominators[[i]] - 1
-        if (noDominators[[i]] == 0) {
-          Q <- c(Q, i)
-        }
-      }
-    }
-    rnkList <- c(rnkList, list(sort(Q)))
-    solAssigned <- c(solAssigned, length(Q))
-  }
-  return(rnkList)
-}
-
-nsga2 <-
-  function(problem,
+nsgaps <-
+  function(X,
+           problem,
            varNo,
            objDim,
-           X,
            lowerBounds = rep(-Inf, varNo),
            upperBounds = rep(Inf, varNo),
            popSize = 100,
@@ -165,13 +28,12 @@ nsga2 <-
            MuDistIdx = 10,
            saving.dir = NULL,
            ...) {
+    # initializing the population
     
-    # evaluating the population
     Y <- evaluate_population(X       = X,
                              problem = problem,
                              nfe     = 0)$Y
-    
-    nfe <- popSize
+    # Y   <- YV$Y
     
     parent <- cbind(X, Y)
     
@@ -192,6 +54,7 @@ nsga2 <-
     }
     parent <- cbind(parent, rnkIndex)
     
+    # crowding distance calculation
     objRange <-
       apply(parent[, (varNo + 1):(varNo + objDim)], 2, max) - apply(parent[, (varNo +
                                                                                 1):(varNo + objDim)], 2, min)
@@ -200,38 +63,68 @@ nsga2 <-
     
     parent <- cbind(parent, apply(cd, 1, sum))
     
+    nfe <- dim(parent)[1]
     iter <- 0
-    # saving data for analysis
     if(!is.null(saving.dir)){
-      write.table(data.frame(X = X, Y =Y, iter = iter, nfe = nfe), paste0(saving.dir, "/all_solutions.csv"), append = F, col.names = T,row.names = F, sep =",")
+      write.table(data.frame(X = X, Y = Y, iter = iter, nfe = nfe, run = run), paste0(saving.dir, "/all_solutions.csv"), append = T, col.names = F, row.names = F, sep =",")
     }
+    # while (iter < maxiter) {
     while (nfe < maxevals) {
       
+      # main start: RA
+      indexes <-
+        1:dim(parent)[1] # right now all solutions are selected
+      if (resource.allocation$name != "none") {
+        epsilon <- 1e-50
+        ra <- runif(indexes)
+        indexes <-
+          sample(
+            x = 1:length(ra),
+            size = resource.allocation$n,
+            prob = ra + epsilon
+          )
+        indexes <- sort(indexes)
+      }
+      popSize <- length(indexes)
+      
+      temp.parent <- parent
+      parent <- parent[indexes,]
+      # main end: RA
       
       # tournament selection
       matingPool <- tournamentSelection(parent, popSize, tourSize)
       
       # crossover operator
-      childAfterX <-
-        boundedSBXover(matingPool[, 1:varNo], lowerBounds, upperBounds, cprob, XoverDistIdx)
+      # childAfterX <-
+      #   boundedSBXover(matingPool[, 1:varNo], lowerBounds, upperBounds, cprob, XoverDistIdx)
       # Only design parameters are input as the first argument
-      
+      childAfterX <- variation_de(matingPool[,1:varNo], matrix(1, nrow(matingPool[,1:varNo]), ncol(matingPool[,1:varNo])))
+      childAfterX <- t(childAfterX)
+      childAfterX <- t(matrix(pmax(0, pmin(childAfterX, 1)),
+                              nrow  = nrow(childAfterX),
+                              byrow = FALSE))
       # mutation operator
       childAfterM <-
         boundedPolyMutation(childAfterX, lowerBounds, upperBounds, mprob, MuDistIdx)
-      childAfterM <- t(childAfterM)
-      childAfterM <- t(matrix(pmax(0, pmin(childAfterM, 1)),
-                            nrow  = nrow(childAfterM),
-                            byrow = FALSE))
       
-      # evaluate the objective functions of childAfterM
+      # evaluate the objective fns of childAfterM
+      # childAfterM <- cbind(childAfterM, t(apply(childAfterM, 1, fn)))
       Y <- evaluate_population(X       = childAfterM,
                                problem = problem,
                                nfe     = 0)$Y
-      
       childAfterM <- cbind(childAfterM, Y)
       
-      # Consider use child again and again ...
+      
+      nfe <- nfe + dim(childAfterM)[1]
+      
+      
+      # RA pop adjustments - start
+      parent <- temp.parent
+      temp.parent[indexes, 1:(varNo + objDim)] <- childAfterM
+      childAfterM <- temp.parent[, 1:(varNo + objDim)]
+      popSize <- dim(childAfterM)[1]
+      # RA pop adjustments - end
+      
       # "Rt = Pt + Qt"
       # Combine the parent with the childAfterM (No need to retain the rnkIndex and cd of parent)
       parentNext <- rbind(parent[, 1:(varNo + objDim)], childAfterM)
@@ -262,30 +155,38 @@ nsga2 <-
         parentNext[order(parentNext[, varNo + objDim + 1], -parentNext[, varNo +
                                                                          objDim + 2]), ]
       
-      
       # choose the first 'popSize' rows for next generation
       parent <- parentNext.sort[1:popSize, ]
+      # cat("Gen: ",iter)
       iter <- iter + 1
-      nfe <- nfe + popSize
       if(!is.null(saving.dir)){
-        x.save = parent[, 1:varNo]
-        Y.save = parent[, (varNo + 1):(varNo + objDim)]
-        nd = is_nondominated(Y.save)
-        x.save = matrix(x.save[nd,], ncol = ncol(x.save))
-        Y.save = matrix(Y.save[nd,], ncol = ncol(Y.save))
-        write.table(data.frame(X = x.save, Y = Y.save, iter = iter, nfe = nfe), paste0(saving.dir, "/all_solutions.csv"), append = T, col.names = F, row.names = F, sep =",")
+        write.table(data.frame(X = X, Y = Y, iter = iter, nfe = nfe, run = run), paste0(saving.dir, "/all_solutions.csv"), append = T, col.names = F, row.names = F, sep =",")
       }
     }
-    
     # report on nsga2 settings and results
     result = list(
+      # functions = fn,
+      # parameterDim = varNo,
+      # objectiveDim = objDim,
+      # lowerBounds = lowerBounds,
+      # upperBounds = upperBounds,
+      # popSize = popSize,
+      # tournamentSize = tourSize,
+      # generations = iter,
+      # XoverProb = cprob,
+      # XoverDistIndex = XoverDistIdx,
+      # mutationProb = mprob,
+      # mutationDistIndex = MuDistIdx,
       iter = iter,
       nfe = nfe,
       parameters = parent[, 1:varNo],
-      objectives = parent[, (varNo + 1):(varNo + objDim)]
+      objectives = parent[, (varNo + 1):(varNo + objDim)]#,
+      # paretoFrontRank = parent[, varNo + objDim + 1],
+      # crowdingDistance = parent[, varNo + objDim + 2]
     )
     
     class(result) = "nsga2R"
     
     return(result)
   }
+

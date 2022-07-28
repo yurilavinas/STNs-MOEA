@@ -50,7 +50,7 @@ legend.col <- c(start_ncol, end_ncol, best_ncol, shared_col, vector.col)
 # Function to plot a STN graph
 # -----------------------------------------------------------------------------
 plot_stn <- function(instance)  {
-  load(paste0("stns/",instance), verbose = T)
+  load(paste0("stns/",instance), verbose = F)
   # Decorate nodes
   # Node color by Vector 
   V(STN)[V(STN)$Vector == "Shared"]$color = shared_col
@@ -77,12 +77,11 @@ plot_stn <- function(instance)  {
   V(STN)$frame.color <- V(STN)$color
   V(STN)[best_nodes]$frame.color <- "white"
   # Size of Nodes Proportional to  incoming degree, 
-  V(STN)$size <- min(strength(STN, mode="in"), 3)           # nodes with strength 0 have at least size 0.8 
-  V(STN)[end_nodes]$size = min(V(STN)[end_nodes]$size, 3)       # Increase a a bit size of end nodes
-  V(STN)[start_nodes]$size = min(V(STN)[start_nodes]$size, 3)   # Increase a a bit size of end nodes
-  V(STN)[best_nodes]$size = min(V(STN)[best_nodes]$size, 3)     # Increease a bit more the size of  best nodes
-  
-  
+  V(STN)$size <- sqrt(strength(STN, mode="in"))           # nodes with strength 0 have at least size 0.8 
+  V(STN)[end_nodes]$size = V(STN)[end_nodes]$size + 1      # Increase a a bit size of end nodes
+  V(STN)[start_nodes]$size = V(STN)[start_nodes]$size + 2   # Increase a a bit size of end nodes
+  V(STN)[best_nodes]$size =  V(STN)[best_nodes]$size + 3   # Increase a bit more the size of  best nodes
+
   # Edge color by Vector 
   E(STN)[E(STN)$Vector == "Shared"]$color = shared_col
   E(STN)[E(STN)$Vector == "V1"]$color = vector.col[1]  
@@ -91,7 +90,7 @@ plot_stn <- function(instance)  {
   E(STN)[E(STN)$Vector == "V4"]$color = vector.col[4]  
   E(STN)[E(STN)$Vector == "V5"]$color = vector.col[5]  
   # width of edges proportional to their Count
-  E(STN)$width <- E(STN)$Count
+  E(STN)$width <- sqrt(E(STN)$Count)
   
   title <- paste('Nodes:',vcount(STN), 'Edges:',ecount(STN), 
                  'Comp:', components(STN)$no)

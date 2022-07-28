@@ -76,11 +76,62 @@ boundedSBXover = function (parent_chromosome, lowerBounds, upperBounds, cprob,
   return(child)
 }
 
+
+function (inputData) 
+{
+  popSize = nrow(inputData)
+  idxDominators = vector("list", popSize)
+  idxDominatees = vector("list", popSize)
+  for (i in 1:(popSize - 1)) {
+    for (j in i:popSize) {
+      if (i != j) {
+        xi = inputData[i, ]
+        xj = inputData[j, ]
+        if (all(xi <= xj) && any(xi < xj)) {
+          idxDominators[[j]] = c(idxDominators[[j]], 
+                                 i)
+          idxDominatees[[i]] = c(idxDominatees[[i]], 
+                                 j)
+        }
+        else if (all(xj <= xi) && any(xj < xi)) {
+          idxDominators[[i]] = c(idxDominators[[i]], 
+                                 j)
+          idxDominatees[[j]] = c(idxDominatees[[j]], 
+                                 i)
+        }
+      }
+    }
+  }
+  noDominators <- lapply(idxDominators, length)
+  rnkList <- list()
+  rnkList <- c(rnkList, list(which(noDominators == 0)))
+  solAssigned <- c()
+  solAssigned <- c(solAssigned, length(which(noDominators == 
+                                               0)))
+  while (sum(solAssigned) < popSize) {
+    Q <- c()
+    noSolInCurrFrnt <- solAssigned[length(solAssigned)]
+    for (i in 1:noSolInCurrFrnt) {
+      solIdx <- rnkList[[length(rnkList)]][i]
+      hisDominatees <- idxDominatees[[solIdx]]
+      for (i in hisDominatees) {
+        noDominators[[i]] <- noDominators[[i]] - 1
+        if (noDominators[[i]] == 0) {
+          Q <- c(Q, i)
+        }
+      }
+    }
+    rnkList <- c(rnkList, list(sort(Q)))
+    solAssigned <- c(solAssigned, length(Q))
+  }
+  return(rnkList)
+}
+
 nsga2 <-
-  function(problem,
+  function(X,
+           problem,
            varNo,
            objDim,
-           X,
            lowerBounds = rep(-Inf, varNo),
            upperBounds = rep(Inf, varNo),
            popSize = 100,
@@ -91,21 +142,13 @@ nsga2 <-
            mprob = 0.2,
            MuDistIdx = 10,
            saving.dir = NULL,
-           scaling = TRUE,
            ...) {
+    # initializing the population
     
-    # evaluating the population
     Y <- evaluate_population(X       = X,
                              problem = problem,
                              nfe     = 0)$Y
-    # if(isTRUE(scaling)){
-    #   Y.scaled = scale_vector(as.data.frame(Y))
-    # }
-    # else{
-    #   Y.scaled = Y
-    # }
-    
-    nfe <- popSize
+    # Y   <- YV$Y
     
     parent <- cbind(X, Y)
     
@@ -126,6 +169,7 @@ nsga2 <-
     }
     parent <- cbind(parent, rnkIndex)
     
+    # crowding distance calculation
     objRange <-
       apply(parent[, (varNo + 1):(varNo + objDim)], 2, max) - apply(parent[, (varNo +
                                                                                 1):(varNo + objDim)], 2, min)
@@ -134,14 +178,13 @@ nsga2 <-
     
     parent <- cbind(parent, apply(cd, 1, sum))
     
+    nfe <- dim(parent)[1]
     iter <- 0
-    # saving data for analysis
+    
     if(!is.null(saving.dir)){
       write.table(data.frame(X = X, Y = Y, iter = iter, nfe = nfe, run = run), paste0(saving.dir, "/all_solutions.csv"), append = T, col.names = F, row.names = F, sep =",")
     }
     while (nfe < maxevals) {
-      Y.old = Y
-      
       # tournament selection
       matingPool <- tournamentSelection(parent, popSize, tourSize)
       
@@ -149,29 +192,25 @@ nsga2 <-
       childAfterX <-
         boundedSBXover(matingPool[, 1:varNo], lowerBounds, upperBounds, cprob, XoverDistIdx)
       # Only design parameters are input as the first argument
-      
+      childAfterX <- t(childAfterX)
+      childAfterX <- t(matrix(pmax(0, pmin(childAfterX, 1)),
+                              nrow  = nrow(childAfterX),
+                              byrow = FALSE))
       # mutation operator
       childAfterM <-
         boundedPolyMutation(childAfterX, lowerBounds, upperBounds, mprob, MuDistIdx)
-      childAfterM <- t(childAfterM)
-      childAfterM <- t(matrix(pmax(0, pmin(childAfterM, 1)),
-                              nrow  = nrow(childAfterM),
-                              byrow = FALSE))
       
-      # evaluate the objective functions of childAfterM
+      # evaluate the objective fns of childAfterM
+      # childAfterM <- cbind(childAfterM, t(apply(childAfterM, 1, fn)))
       Y <- evaluate_population(X       = childAfterM,
                                problem = problem,
-                               nfe     = 0)$Y
-      # if(isTRUE(scaling)){
-      #   Y.scaled = scale_vector(rbind(Y, Y.old))
-      # }
-      # else{
-      #   Y.scaled = Y[1:popSize]
-      # }
-      
+                               nfe     = nfe)$Y
       childAfterM <- cbind(childAfterM, Y)
       
-      # Consider use child again and again ...
+      
+      nfe <- nfe + dim(childAfterM)[1]
+      
+    
       # "Rt = Pt + Qt"
       # Combine the parent with the childAfterM (No need to retain the rnkIndex and cd of parent)
       parentNext <- rbind(parent[, 1:(varNo + objDim)], childAfterM)
@@ -202,11 +241,10 @@ nsga2 <-
         parentNext[order(parentNext[, varNo + objDim + 1], -parentNext[, varNo +
                                                                          objDim + 2]), ]
       
-      
       # choose the first 'popSize' rows for next generation
       parent <- parentNext.sort[1:popSize, ]
+      # cat("Gen: ",iter)
       iter <- iter + 1
-      nfe <- nfe + popSize
       if(!is.null(saving.dir)){
         X = parent[, 1:varNo]
         nd = find_nondominated_points(Y)
@@ -214,20 +252,31 @@ nsga2 <-
         data = data.frame(X = X[nd,], Y = Y, iter = iter, nfe = nfe, run = run)
         write.table(data, paste0(saving.dir, "/all_solutions.csv"), append = T, col.names = F, row.names = F, sep =",")
       }
-      
-      
-      
     }
-    
     # report on nsga2 settings and results
     result = list(
+      # functions = fn,
+      # parameterDim = varNo,
+      # objectiveDim = objDim,
+      # lowerBounds = lowerBounds,
+      # upperBounds = upperBounds,
+      # popSize = popSize,
+      # tournamentSize = tourSize,
+      # generations = iter,
+      # XoverProb = cprob,
+      # XoverDistIndex = XoverDistIdx,
+      # mutationProb = mprob,
+      # mutationDistIndex = MuDistIdx,
       iter = iter,
       nfe = nfe,
-      X = parent[, 1:varNo],
-      Y = Y
+      parameters = parent[, 1:varNo],
+      objectives = parent[, (varNo + 1):(varNo + objDim)]#,
+      # paretoFrontRank = parent[, varNo + objDim + 1],
+      # crowdingDistance = parent[, varNo + objDim + 2]
     )
     
     class(result) = "nsga2R"
     
     return(result)
   }
+

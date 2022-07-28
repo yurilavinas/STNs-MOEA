@@ -10,10 +10,9 @@ library(igraph)
 library(dplyr)
 library(tidyr)
 
-library(bit64)
-
 od <- 3     # Objective decimal precision
-
+inpath = "../"
+outpath = "../"
 # -----------------------------------------------------------------------------
 # Function to create a STN object from the input data
 # The input file contains several runs 
@@ -23,27 +22,26 @@ create_stn <- function(instance)  {
   aux <- substr(instance, 1, nchar(instance)-4)  # remove .txt 
   fn <- strsplit(aux, "_")[[1]][2]
   print(aux)
-  pfname <- paste0("pf/", fn, "_pf.txt")
+  pfname <- paste0(inpath,"pf/", fn, "_pf.txt")
   pf <- read.table(pfname, colClasses=c("double", "double"))  # Read the Pareto Front file
-  fi <- as.integer(substr(fn, 3, nchar(fn))) # Number of the function
+  
   # Convert the objective vector into a planar string
   # This is to later check membership of STN solutions to the Pareto front
-  # if (fi >= 8) { # functions 8, 9 and 10 have 3 objectives
-  if (dim(pf)[2]==3) { # functions 8, 9 and 10 have 3 objectives
+  if (dim(pf)[2]==3) { 
     colnames(pf) <- c("f1", "f2", "f3")
-    pf_str <- paste(as.integer64(round(pf$f1,od)*10^od),
-                    as.integer64(round(pf$f2, od)*10^od),
-                    as.integer64(round(pf$f3, od)*10^od), sep = "_")
+    pf_str <- paste(as.integer(round(pf$f1,od)*10^od),
+                    as.integer(round(pf$f2, od)*10^od),
+                    as.integer(round(pf$f3, od)*10^od), sep = "_")
   } else {
     colnames(pf) <- c("f1", "f2")
-    pf_str <- paste(as.integer64(round(pf$f1,od)*10^od),
-                    as.integer64(round(pf$f2, od)*10^od), sep = "_")
+    pf_str <- paste(as.integer(round(pf$f1,od)*10^od),
+                    as.integer(round(pf$f2, od)*10^od), sep = "_")
   }
   
   pf_size <- nrow(pf)
   
   # Read trajectory data
-  if (dim(pf)[2]==3) { # functions 8, 9 and 10 have 3 objectives
+  if (dim(pf)[2]==3) { 
     df <- read.table(paste0(fname,instance), stringsAsFactors = F, header = T,
                      colClasses=c("double", "double", "double", "character", 
                                   "character", "integer", "integer","character"))
@@ -64,9 +62,9 @@ create_stn <- function(instance)  {
     filter (df$Gen == 0)
   
   end <- df %>%
-     filter (df$Gen == max(df$Gen) - 1)  # last generation as it starts coutning with 0
+    filter (df$Gen == max(df$Gen))  # last generation as it starts couting with 0
   
-  if (dim(pf)[2]==3){
+  if (dim(pf)[2]==3) { 
     #  Aggregate rows and count the number of solutions for each vector.
     s <- df %>%
       group_by(f1,f2,f3,Solution1, Vector) %>%
@@ -90,8 +88,8 @@ create_stn <- function(instance)  {
   # So the first representatinve is kept, so the objective values are those of the first appeared
   # this is equivalent to "randomly" selecting the fitness of representative solutions
   # An alternative can be to select a lower precision for the objective values.
- 
- 
+  
+  
   # Convert from long to wide, keeping a column for each Vector.
   # Fill in missing values with zero
   nodes <- s %>%
@@ -105,7 +103,7 @@ create_stn <- function(instance)  {
   # - Type:  Indicates  locations at the Start, Medium and end of runs 
   # -Obj: Objective vector in string form for comparison against theoretical Pareto front
   
-  if (dim(pf)[2]==3) { # functions 8, 9 and 10 have 3 objectives
+  if (dim(pf)[2]==3) { 
     ov_str <- paste(as.integer(round(nodes$f1,od)*10^od),
                     as.integer(round(nodes$f2, od)*10^od),
                     as.integer(round(nodes$f3, od)*10^od), sep = "_")
@@ -135,7 +133,8 @@ create_stn <- function(instance)  {
   nodes[nodes$Shared ==1 & nodes$V5 >0, ]$Vector <- "V5"
   # Check if objective vector is in the Pareto front
   nodes[nodes$Obj%in% pf_str, ]$Vector = "Pareto"
-  
+  print("Pareto Nodes:")
+  print(which(nodes$Obj%in% pf_str))
   # Assign Type of nodes -- There are 4 possible values
   # Begin, End, Medium, Pareto - Default is Medium
   nodes[nodes$Solution %in% start$Solution1, ]$Type = "Begin"
@@ -151,7 +150,6 @@ create_stn <- function(instance)  {
     filter(Gen < max(df$Gen))
   
   #  Aggregate rows and count the number of edges (sol1 -> sol2) for each vector.
-  
   s <- df %>%
     group_by(Solution1, Solution2, Vector) %>%
     summarise(n = n())
@@ -163,9 +161,6 @@ create_stn <- function(instance)  {
   edges <- s %>%
     pivot_wider(names_from = Vector, values_from = n, values_fill = 0)
   
-  s <- s %>%
-    select(Solution1, Vector, n)
-  
   # Add a new columns: Count the sum of values for each vector, 
   # Shared: indicates how many vectors visited and edge
   edges <- edges %>%
@@ -173,9 +168,6 @@ create_stn <- function(instance)  {
            Shared = (V1>0) + (V2>0) + (V3>0) + (V4>0) + (V5>0),
            Vector = "Shared")
   
-  
-  # This removes duplicate solutions
-  edges <- edges[!duplicated(edges$Solution1,edges$Solution2), ]
   # Assign type of Edges -- There are 6 types of nodes
   # V1, V2, V3, V4, V5, Shared
   
@@ -193,15 +185,16 @@ create_stn <- function(instance)  {
   
   # Saving the STN object, but also the nodes and edges
   # As they can be useful to compute  metrics
-  fname <- paste0("stns/", aux, ".RData")
+  fname <- paste0(outpath,"stns/", aux, ".RData")
   save(pf_size, nodes, edges, STN, file = fname)
-
+  print(table(V(STN)$Type))
+  
   return (nrow(nodes))  # Return  number of nodes, just to check it
 }
 
 # ---- Get all files in the given input folder -----------------------------
 
-fname <-  paste0("STN_data/")
+fname <-  paste0(inpath,"STN_data/")
 data_files <- list.files(fname)  # filenames in folder
 
 # Create STNs for all files in the folder
